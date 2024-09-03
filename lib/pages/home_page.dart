@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:login_app/pages/phone_page.dart';
 import 'package:sign_in_button/sign_in_button.dart';
 
 class HomePage extends StatefulWidget {
@@ -38,28 +39,45 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("Google SignIn"),
       ),
-      body: _user == null ? _buildSignInButton() : _buildUserInfo(),
+      body: _user == null ? _buildSignInWidget() : _buildUserInfo(),
     );
   }
 
-  Widget _buildSignInButton() {
+  Widget _buildSignInWidget() {
     return Center(
-      child: SizedBox(
-        height: 50,
-        child: SignInButton(
-          Buttons.google,
-          text: isSigningIn ? "Iniciando sesión..." : "Acceder con Google",
-          onPressed: isSigningIn
-              ? () => {}
-              : _handleGoogleSignIn, // Deshabilita el botón si ya está iniciando sesión
-        ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 50,
+            child: SignInButton(
+              Buttons.google,
+              text: isSigningIn ? "Iniciando sesión..." : "Acceder con Google",
+              onPressed: isSigningIn
+                  ? () => {}
+                  : _handleGoogleSignIn, // Deshabilita el botón si ya está iniciando sesión
+            ),
+          ),
+
+          SizedBox(
+            height: 50,
+            child: SignInButton(
+              Buttons.email,
+              text: "Acceder con telefono",
+              onPressed: isSigningIn
+                  ? () => {}
+                  :() => Navigator.push(context, MaterialPageRoute(builder: (context) => const PhonePage())), // Deshabilita el botón si ya está iniciando sesión
+            ),
+          ),
+
+
+        ],
       ),
     );
   }
 
   Widget _buildSignOutButton() {
     return GestureDetector(
-      onTap: _handleGoogleSignOut,
+      onTap: _handleSignOut,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         height: 50,
@@ -100,7 +118,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _handleGoogleSignOut() async {
+  Future<void> _handleSignOut() async {
     try {
       await _auth.signOut();
     } catch (e) {

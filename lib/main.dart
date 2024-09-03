@@ -2,6 +2,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:login_app/firebase_options.dart';
 import 'package:login_app/pages/home_page.dart';
 
@@ -19,6 +20,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp( debugShowCheckedModeBanner: false, home: HomePage());
+    return GlobalLoaderOverlay(child: const MaterialApp( debugShowCheckedModeBanner: false, home: HomePage()));
   }
+  
 }

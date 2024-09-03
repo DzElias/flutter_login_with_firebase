@@ -30,8 +30,8 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-/ios/
-/android/
+ios/
+android/
 
 
 # Symbolication related

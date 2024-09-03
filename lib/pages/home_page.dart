@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_button/sign_in_button.dart';
 
 class HomePage extends StatefulWidget {
@@ -12,13 +14,20 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? _user;
+  bool isSigningIn =
+      false; // Bandera para controlar el estado de inicio de sesión
 
   @override
   void initState() {
     super.initState();
-    _auth.authStateChanges().listen((event) {
+    initialization();
+    _listenToAuthState();
+  }
+
+  void _listenToAuthState() {
+    _auth.authStateChanges().listen((user) {
       setState(() {
-        _user = event;
+        _user = user;
       });
     });
   }
@@ -26,63 +35,102 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Google SignIn"),
-        ),
-        body: _user == null ? _googleSignInBtn() : _userInfo());
+      appBar: AppBar(
+        title: const Text("Google SignIn"),
+      ),
+      body: _user == null ? _buildSignInButton() : _buildUserInfo(),
+    );
   }
 
-  Widget _googleSignInBtn() {
+  Widget _buildSignInButton() {
     return Center(
       child: SizedBox(
         height: 50,
         child: SignInButton(
-          Buttons.google, 
-          text: "Acceder con Google",
-          onPressed: _handleGoogleSignIn), 
-          
+          Buttons.google,
+          text: isSigningIn ? "Iniciando sesión..." : "Acceder con Google",
+          onPressed: isSigningIn
+              ? () => {}
+              : _handleGoogleSignIn, // Deshabilita el botón si ya está iniciando sesión
         ),
-
-      
+      ),
     );
   }
 
-  Widget _googleSignOutBtn() {
-    return Center(
-      child: GestureDetector(
-        onTap: _auth.signOut,
-        child: SizedBox(
-          height: 50,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.all(Radius.circular(15))
-            ),
-            child: Center(child: Text("Cerrar sesion")),
-          )
-        
-        
-            ),
-      ));
+  Widget _buildSignOutButton() {
+    return GestureDetector(
+      onTap: _handleGoogleSignOut,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: const Center(child: Text("Cerrar sesión")),
+      ),
+    );
   }
 
-  void _handleGoogleSignIn(){
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      isSigningIn =
+          true; // Marca que la operación de inicio de sesión está en curso
+    });
+
     try {
-      GoogleAuthProvider _googleAuthProvider = GoogleAuthProvider();
-      _auth.signInWithProvider(_googleAuthProvider);
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
-      print(e);
+      print('Error al iniciar sesión: $e');
+    } finally {
+      setState(() {
+        isSigningIn =
+            false; // Restablece la bandera después de completar la operación
+      });
     }
   }
 
-  Widget _userInfo() {
-    return Column(
-      children: [
-        Text("Bienvenido " + _user!.email!),
-        _googleSignOutBtn(),
+  Future<void> _handleGoogleSignOut() async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      print('Error al cerrar sesión: $e');
+    }
+  }
 
+  Widget _buildUserInfo() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("Bienvenido, ${_user?.email ?? 'Usuario'}"),
+        const SizedBox(height: 20),
+        _buildSignOutButton(),
       ],
     );
+  }
+
+  void initialization() async {
+    // This is where you can initialize the resources needed by your app while
+    // the splash screen is displayed.  Remove the following example because
+    // delaying the user experience is a bad design practice!
+    // ignore_for_file: avoid_print
+    print('ready in 3...');
+    await Future.delayed(const Duration(seconds: 1));
+    print('ready in 2...');
+    await Future.delayed(const Duration(seconds: 1));
+    print('ready in 1...');
+    await Future.delayed(const Duration(seconds: 1));
+    print('go!');
+    FlutterNativeSplash.remove();
   }
 }
